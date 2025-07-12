@@ -23,7 +23,8 @@ class MarketDataCanvas(FigureCanvas):
         self.ax_spread = self.fig.add_subplot(3, 1, 3)
         
         self._apply_dark_theme()
-        self.fig.subplots_adjust(hspace=0.35, left=0.08, right=0.96, top=0.94, bottom=0.08)
+        # Reduzierte hspace für kompakteres Layout
+        self.fig.subplots_adjust(hspace=0.25, left=0.08, right=0.96, top=0.94, bottom=0.10)
 
     def _apply_dark_theme(self):
         """Wendet optimiertes dunkles Design an."""
@@ -171,14 +172,34 @@ class MarketDataCanvas(FigureCanvas):
                                    color='#ffffff', bbox=dict(boxstyle="round,pad=0.3", 
                                    facecolor='#2d2d2d', alpha=0.8))
             
-            # Optimierte Datumsformatierung
+            # Optimierte Datumsformatierung - HORIZONTAL statt schräg
             date_format = '%d.%m' if len(timestamps) > 7 else '%d.%m %H:%M'
+            
+            # Intelligente Label-Reduktion für bessere Lesbarkeit
+            max_labels = 8  # Maximal 8 Labels auf X-Achse
+            label_interval = max(1, len(timestamps) // max_labels)
+            
             for ax in [self.ax_price, self.ax_volume, self.ax_spread]:
                 ax.xaxis.set_major_formatter(mdates.DateFormatter(date_format))
-                ax.tick_params(axis='x', rotation=45)
                 
-                if len(timestamps) > 20:
-                    ax.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, len(timestamps)//15)))
+                # HORIZONTAL statt rotation=45
+                ax.tick_params(axis='x', rotation=0, labelsize=8)
+                
+                # Adaptive Label-Anzahl basierend auf Datenmenge
+                if len(timestamps) > 15:
+                    # Bei vielen Datenpunkten: Weniger Labels anzeigen
+                    ax.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, len(timestamps)//max_labels)))
+                elif len(timestamps) > 5:
+                    # Bei mittlerer Anzahl: Jeden 2. anzeigen
+                    for i, label in enumerate(ax.xaxis.get_ticklabels()):
+                        if i % 2 != 0:
+                            label.set_visible(False)
+            
+            # Nur das unterste Diagramm zeigt X-Achsen-Labels
+            # Die oberen beiden sparen Platz
+            self.ax_price.tick_params(axis='x', labelbottom=False)
+            self.ax_volume.tick_params(axis='x', labelbottom=False)
+            # self.ax_spread behält die Labels (unterstes Diagramm)
             
             self.fig.tight_layout()
             
