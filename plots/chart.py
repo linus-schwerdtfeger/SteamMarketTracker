@@ -1,66 +1,54 @@
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
 from datetime import datetime
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 import numpy as np
 
-class EnhancedPricePlotCanvas(FigureCanvas):
-    """Canvas für die Darstellung von Preisverläufen, Volumen und Spread als Matplotlib-Plot."""
+class MarketDataCanvas(FigureCanvas):
+    """Canvas für umfassende Marktdatenvisualisierung (Preis, Volumen, Spread)."""
     
     def __init__(self, parent=None):
-        # Dynamische Größe - wird automatisch an Container angepasst
-        self.fig = Figure(figsize=(10, 6), dpi=100)
+        # Optimierte Figure-Größe für drei Subplots
+        self.fig = Figure(figsize=(12, 8), dpi=100)
         super().__init__(self.fig)
         self.setParent(parent)
         
-        # Dunkler Hintergrund für Figure
-        self.fig.patch.set_facecolor('#2d2d2d')  # RGB: 45, 45, 45
+        # Dunkler Hintergrund
+        self.fig.patch.set_facecolor('#2d2d2d')
         
-        # Erstelle drei Subplots: Preis, Volume, Spread
-        self.ax_price = self.fig.add_subplot(3, 1, 1)  # Preisverlauf
-        self.ax_volume = self.fig.add_subplot(3, 1, 2)  # Volumen (Balken)
-        self.ax_spread = self.fig.add_subplot(3, 1, 3)  # Spread (Linie)
+        # Drei optimierte Subplots
+        self.ax_price = self.fig.add_subplot(3, 1, 1)
+        self.ax_volume = self.fig.add_subplot(3, 1, 2)
+        self.ax_spread = self.fig.add_subplot(3, 1, 3)
         
-        # Dunkler Stil für alle Subplots
         self._apply_dark_theme()
-        
-        # Bessere Größenanpassung
-        self.fig.subplots_adjust(hspace=0.4, left=0.1, right=0.95, top=0.95, bottom=0.1)
+        self.fig.subplots_adjust(hspace=0.35, left=0.08, right=0.96, top=0.94, bottom=0.08)
 
     def _apply_dark_theme(self):
-        """Wendet dunkles Design auf alle Plots an."""
+        """Wendet optimiertes dunkles Design an."""
         for ax in [self.ax_price, self.ax_volume, self.ax_spread]:
-            # Hintergrund der Plots
-            ax.set_facecolor('#2d2d2d')  # RGB: 45, 45, 45
+            ax.set_facecolor('#2d2d2d')
+            ax.grid(True, alpha=0.3, color='#cccccc', linestyle='-', linewidth=0.6)
             
-            # Grid in hellerem Grau für bessere Sichtbarkeit
-            ax.grid(True, alpha=0.3, color='#cccccc', linestyle='-', linewidth=0.8)
+            for spine in ax.spines.values():
+                spine.set_color('#cccccc')
+                spine.set_linewidth(0.8)
             
-            # Achsen-Farben
-            ax.spines['bottom'].set_color('#cccccc')
-            ax.spines['top'].set_color('#cccccc') 
-            ax.spines['right'].set_color('#cccccc')
-            ax.spines['left'].set_color('#cccccc')
-            
-            # Tick-Farben (Zahlen und Beschriftungen)
-            ax.tick_params(axis='both', colors='#ffffff', labelsize=8)
-            
-            # Titel- und Label-Farben
+            ax.tick_params(axis='both', colors='#ffffff', labelsize=9, width=0.8)
             ax.title.set_color('#ffffff')
             ax.xaxis.label.set_color('#ffffff')
             ax.yaxis.label.set_color('#ffffff')
 
-    def plot_comprehensive(self, data: List[Tuple], skin_name: str):
+    def plot_market_data(self, data: List[Tuple], skin_name: str):
         """
-        Zeichnet umfassende Marktdaten (Preis, Volumen, Spread).
+        Zeichnet umfassende Marktdaten.
         
         Args:
             data: Liste von (timestamp, price, median_price, volume, spread_absolute, spread_percentage) Tupeln
-            skin_name: Name des Skins für den Titel
+            skin_name: Name des Skins
         """
-        # Alle Subplots leeren und dunkles Theme anwenden
+        # Plots zurücksetzen
         for ax in [self.ax_price, self.ax_volume, self.ax_spread]:
             ax.clear()
         self._apply_dark_theme()
@@ -70,109 +58,101 @@ class EnhancedPricePlotCanvas(FigureCanvas):
             return
 
         try:
-            # Daten extrahieren
+            # Effiziente Datenextraktion mit NumPy
             timestamps = [datetime.fromisoformat(row[0]) for row in data]
-            prices = [row[1] for row in data]
-            median_prices = [row[2] for row in data]
-            volumes = [row[3] for row in data]
-            spread_absolute = [row[4] for row in data]
-            spread_percentage = [row[5] for row in data]
+            prices = np.array([row[1] for row in data])
+            median_prices = np.array([row[2] for row in data])
+            volumes = np.array([row[3] for row in data])
+            spread_absolute = np.array([row[4] for row in data])
+            spread_percentage = np.array([row[5] for row in data])
             
-            # 1. Preisverlauf (mit Median-Preis) - Helle Farben für Kontrast
-            self.ax_price.plot(timestamps, prices, marker="o", linestyle="-", 
-                              color="#00bfff", linewidth=2, markersize=3, label="Niedrigster Preis")  # Cyan-Blau
-            if any(mp > 0 for mp in median_prices):
-                self.ax_price.plot(timestamps, median_prices, marker="s", linestyle="--", 
-                                  color="#ffa500", linewidth=1.5, markersize=2, label="Median Preis")  # Orange
-                legend = self.ax_price.legend(fontsize=8)
+            # 1. Preisverlauf
+            self.ax_price.plot(timestamps, prices, 
+                              color="#00bfff", linewidth=2.5, marker="o", markersize=4,
+                              label="Niedrigster Preis", alpha=0.9)
+            
+            # Median-Preis nur wenn verfügbar
+            if np.any(median_prices > 0):
+                self.ax_price.plot(timestamps, median_prices, 
+                                  color="#ffa500", linewidth=2, linestyle="--", 
+                                  marker="s", markersize=3, label="Median Preis", alpha=0.8)
+                
+                legend = self.ax_price.legend(loc='upper left', fontsize=9, framealpha=0.9)
                 legend.get_frame().set_facecolor('#2d2d2d')
                 legend.get_frame().set_edgecolor('#cccccc')
                 for text in legend.get_texts():
                     text.set_color('#ffffff')
             
-            self.ax_price.set_title(f"Preisverlauf: {skin_name}", fontsize=12, fontweight='bold', color='#ffffff')
-            self.ax_price.set_ylabel("Preis (€)", fontsize=10, color='#ffffff')
+            self.ax_price.set_title(f"Preisverlauf: {skin_name}", fontsize=13, fontweight='bold')
+            self.ax_price.set_ylabel("Preis (€)", fontsize=11)
             
-            # 2. Handelsvolumen (Balkendiagramm) - Grün für Volumen
-            bar_width = (timestamps[-1] - timestamps[0]).total_seconds() / (len(timestamps) * 86400 * 2) if len(timestamps) > 1 else 1
-            self.ax_volume.bar(timestamps, volumes, width=bar_width, 
-                              color="#00ff7f", alpha=0.8, label="Handelsvolumen")  # Helles Grün
+            # Y-Achse optimieren
+            if len(prices) > 1:
+                price_range = np.max(prices) - np.min(prices)
+                margin = price_range * 0.05
+                self.ax_price.set_ylim(np.min(prices) - margin, np.max(prices) + margin)
             
-            self.ax_volume.set_title("Handelsvolumen (Liquidität)", fontsize=11, fontweight='bold', color='#ffffff')
-            self.ax_volume.set_ylabel("Volumen", fontsize=10, color='#ffffff')
-            
-            # 3. Spread (Linie) - Rot/Pink für Spread
-            if any(sp > 0 for sp in spread_percentage):
-                self.ax_spread.plot(timestamps, spread_percentage, marker="^", linestyle="-", 
-                                   color="#ff6b6b", linewidth=2, markersize=3, label="Spread %")  # Helles Rot
-                self.ax_spread.set_ylabel("Spread (%)", fontsize=10, color='#ffffff')
+            # 2. Handelsvolumen
+            if len(timestamps) > 1:
+                time_delta = (timestamps[-1] - timestamps[0]).total_seconds() / len(timestamps)
+                bar_width = time_delta / 86400 * 0.8
             else:
-                self.ax_spread.plot(timestamps, spread_absolute, marker="^", linestyle="-", 
-                                   color="#ff6b6b", linewidth=2, markersize=3, label="Spread (€)")  # Helles Rot
-                self.ax_spread.set_ylabel("Spread (€)", fontsize=10, color='#ffffff')
+                bar_width = 0.8
+                
+            self.ax_volume.bar(timestamps, volumes, width=bar_width, 
+                              color="#00ff7f", alpha=0.8, edgecolor='#cccccc', linewidth=0.5)
             
-            self.ax_spread.set_title("Bid-Ask Spread", fontsize=11, fontweight='bold', color='#ffffff')
-            self.ax_spread.set_xlabel("Zeit", fontsize=10, color='#ffffff')
+            self.ax_volume.set_title("Handelsvolumen (Liquidität)", fontsize=12, fontweight='bold')
+            self.ax_volume.set_ylabel("Anzahl Transaktionen", fontsize=11)
             
-            # Datumsformatierung für alle Plots
+            # Volume-Statistik
+            if len(volumes) > 0:
+                avg_volume = np.mean(volumes)
+                max_volume = np.max(volumes)
+                self.ax_volume.text(0.02, 0.95, f'Ø: {avg_volume:.0f} | Max: {max_volume:.0f}', 
+                                   transform=self.ax_volume.transAxes, fontsize=9, 
+                                   color='#ffffff', bbox=dict(boxstyle="round,pad=0.3", 
+                                   facecolor='#2d2d2d', alpha=0.8))
+            
+            # 3. Spread - Intelligente Auswahl
+            use_percentage = np.any(spread_percentage > 0) and np.mean(spread_percentage) < 50
+            
+            if use_percentage:
+                spread_data = spread_percentage
+                ylabel = "Spread (%)"
+                color = "#ff6b6b"
+                unit = "%"
+            else:
+                spread_data = spread_absolute
+                ylabel = "Spread (€)"
+                color = "#ff9500"
+                unit = "€"
+            
+            self.ax_spread.plot(timestamps, spread_data, 
+                               color=color, linewidth=2.5, marker="^", markersize=4,
+                               alpha=0.9)
+            
+            self.ax_spread.set_title("Bid-Ask Spread (Markt-Effizienz)", fontsize=12, fontweight='bold')
+            self.ax_spread.set_ylabel(ylabel, fontsize=11)
+            self.ax_spread.set_xlabel("Zeit", fontsize=11)
+            
+            # Spread-Statistik
+            if len(spread_data) > 0:
+                avg_spread = np.mean(spread_data)
+                min_spread = np.min(spread_data)
+                self.ax_spread.text(0.02, 0.95, f'Ø: {avg_spread:.1f}{unit} | Min: {min_spread:.1f}{unit}', 
+                                   transform=self.ax_spread.transAxes, fontsize=9, 
+                                   color='#ffffff', bbox=dict(boxstyle="round,pad=0.3", 
+                                   facecolor='#2d2d2d', alpha=0.8))
+            
+            # Optimierte Datumsformatierung
+            date_format = '%d.%m' if len(timestamps) > 7 else '%d.%m %H:%M'
             for ax in [self.ax_price, self.ax_volume, self.ax_spread]:
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m'))
-                ax.tick_params(axis='x', rotation=45, colors='#ffffff')
-                ax.tick_params(axis='y', colors='#ffffff')
-            
-            # Layout optimieren
-            self.fig.tight_layout()
-            
-        except Exception as e:
-            self._show_error_message(skin_name, str(e))
-        
-        finally:
-            self.draw()
-
-    def plot(self, data: List[Tuple[str, float]], skin_name: str):
-        """
-        Zeichnet nur den Preisverlauf (für Rückwärtskompatibilität).
-        
-        Args:
-            data: Liste von (timestamp, price) Tupeln
-            skin_name: Name des Skins für den Titel
-        """
-        # Alle Subplots leeren und dunkles Theme anwenden
-        for ax in [self.ax_price, self.ax_volume, self.ax_spread]:
-            ax.clear()
-        self._apply_dark_theme()
-        
-        if not data:
-            self._show_no_data_message(skin_name)
-            return
-
-        try:
-            # Nur Preisverlauf im ersten Subplot
-            timestamps = [datetime.fromisoformat(ts) for ts, _ in data]
-            prices = [p for _, p in data]
-            
-            self.ax_price.plot(timestamps, prices, marker="o", linestyle="-", 
-                              color="#00bfff", linewidth=2, markersize=4)  # Cyan-Blau
-            self.ax_price.set_title(f"Preisverlauf: {skin_name}", fontsize=12, fontweight='bold', color='#ffffff')
-            self.ax_price.set_ylabel("Preis (€)", fontsize=10, color='#ffffff')
-            
-            # Andere Subplots als leer markieren
-            self.ax_volume.text(0.5, 0.5, 'Keine Volumendaten verfügbar', 
-                               ha='center', va='center', transform=self.ax_volume.transAxes, 
-                               fontsize=10, alpha=0.7, color='#cccccc')
-            self.ax_volume.set_title("Handelsvolumen (Liquidität)", fontsize=11, fontweight='bold', color='#ffffff')
-            
-            self.ax_spread.text(0.5, 0.5, 'Keine Spread-Daten verfügbar', 
-                               ha='center', va='center', transform=self.ax_spread.transAxes, 
-                               fontsize=10, alpha=0.7, color='#cccccc')
-            self.ax_spread.set_title("Bid-Ask Spread", fontsize=11, fontweight='bold', color='#ffffff')
-            self.ax_spread.set_xlabel("Zeit", fontsize=10, color='#ffffff')
-            
-            # Datumsformatierung
-            for ax in [self.ax_price, self.ax_volume, self.ax_spread]:
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%d.%m'))
-                ax.tick_params(axis='x', rotation=45, colors='#ffffff', labelsize=8)
-                ax.tick_params(axis='y', colors='#ffffff', labelsize=8)
+                ax.xaxis.set_major_formatter(mdates.DateFormatter(date_format))
+                ax.tick_params(axis='x', rotation=45)
+                
+                if len(timestamps) > 20:
+                    ax.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, len(timestamps)//15)))
             
             self.fig.tight_layout()
             
@@ -183,28 +163,29 @@ class EnhancedPricePlotCanvas(FigureCanvas):
             self.draw()
 
     def _show_no_data_message(self, skin_name: str):
-        """Zeigt eine Nachricht an, wenn keine Daten verfügbar sind."""
-        message = f"Keine Daten für: {skin_name}" if skin_name else "Keine Daten verfügbar"
+        """Zeigt Nachricht bei fehlenden Daten."""
+        message = f"Keine Marktdaten verfügbar für:\n{skin_name}" if skin_name else "Keine Daten verfügbar"
         
-        for ax, title in zip([self.ax_price, self.ax_volume, self.ax_spread], 
-                            ["Preisverlauf", "Handelsvolumen", "Bid-Ask Spread"]):
+        titles = ["Preisverlauf", "Handelsvolumen", "Bid-Ask Spread"]
+        for ax, title in zip([self.ax_price, self.ax_volume, self.ax_spread], titles):
             ax.text(0.5, 0.5, message, ha='center', va='center', 
-                   transform=ax.transAxes, fontsize=12, alpha=0.7, color='#cccccc')
-            ax.set_title(title, fontsize=11, fontweight='bold', color='#ffffff')
+                   transform=ax.transAxes, fontsize=14, color='#cccccc',
+                   bbox=dict(boxstyle="round,pad=0.5", facecolor='#2d2d2d', alpha=0.8))
+            ax.set_title(title, fontsize=12, fontweight='bold')
         
-        self.ax_spread.set_xlabel("Zeit", fontsize=10, color='#ffffff')
+        self.ax_spread.set_xlabel("Zeit", fontsize=11)
         self.draw()
 
     def _show_error_message(self, skin_name: str, error: str):
-        """Zeigt eine Fehlermeldung an."""
-        for ax, title in zip([self.ax_price, self.ax_volume, self.ax_spread], 
-                            ["Preisverlauf", "Handelsvolumen", "Bid-Ask Spread"]):
-            ax.text(0.5, 0.5, f'Fehler: {error}', ha='center', va='center',
-                   transform=ax.transAxes, fontsize=10, color='#ff6b6b')  # Helles Rot für Fehler
-            ax.set_title(f"Fehler bei {title}: {skin_name}", fontsize=11, color='#ffffff')
+        """Zeigt Fehlermeldung."""
+        error_msg = f"Fehler beim Laden der Marktdaten:\n{error}"
         
-        print(f"Fehler beim Plotten: {error}")
+        titles = ["Preisverlauf", "Handelsvolumen", "Bid-Ask Spread"]
+        for ax, title in zip([self.ax_price, self.ax_volume, self.ax_spread], titles):
+            ax.text(0.5, 0.5, error_msg, ha='center', va='center',
+                   transform=ax.transAxes, fontsize=12, color='#ff6b6b',
+                   bbox=dict(boxstyle="round,pad=0.5", facecolor='#2d2d2d', alpha=0.9))
+            ax.set_title(f"Fehler - {title}: {skin_name}", fontsize=12, color='#ff6b6b')
+        
+        print(f"Chart-Fehler: {error}")
         self.draw()
-
-# Alias für Rückwärtskompatibilität
-PricePlotCanvas = EnhancedPricePlotCanvas

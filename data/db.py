@@ -1,60 +1,43 @@
 import sqlite3
 from datetime import datetime
 import csv
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 DB_PATH = "skin_prices.db"
 
 def init_db():
-    """Initialisiert die SQLite-Datenbank mit der notwendigen Tabellenstruktur."""
+    """Initialisiert die Datenbank für erweiterte Marktdaten."""
     with sqlite3.connect(DB_PATH) as conn:
-        # Erweiterte Tabelle für umfassende Marktdaten
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS price_history (
+            CREATE TABLE IF NOT EXISTS market_data (
                 id INTEGER PRIMARY KEY,
                 skin TEXT NOT NULL,
                 timestamp TEXT NOT NULL,
-                price REAL NOT NULL,
-                median_price REAL DEFAULT 0,
-                volume INTEGER DEFAULT 0,
-                spread_absolute REAL DEFAULT 0,
-                spread_percentage REAL DEFAULT 0
+                lowest_price REAL NOT NULL,
+                median_price REAL NOT NULL,
+                volume INTEGER NOT NULL,
+                spread_absolute REAL NOT NULL,
+                spread_percentage REAL NOT NULL
             )
         """)
         
-        # Index für bessere Performance bei Abfragen
         conn.execute("""
             CREATE INDEX IF NOT EXISTS idx_skin_timestamp 
-            ON price_history(skin, timestamp)
+            ON market_data(skin, timestamp)
         """)
 
-def insert_price(skin: str, price: float, volume: int = 0):
-    """
-    Fügt einen neuen Preiseintrag zur Datenbank hinzu.
-    
-    Args:
-        skin: Name des Skins
-        price: Preis des Skins
-        volume: Handelsvolumen (optional)
-    """
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "INSERT INTO price_history (skin, timestamp, price, volume) VALUES (?, ?, ?, ?)",
-            (skin, datetime.now().isoformat(timespec='seconds'), price, volume)
-        )
-
-def insert_comprehensive_market_data(skin: str, market_data):
+def insert_market_data(skin: str, market_data):
     """
     Fügt umfassende Marktdaten zur Datenbank hinzu.
     
     Args:
         skin: Name des Skins
-        market_data: MarketData Objekt mit allen Marktinformationen
+        market_data: MarketData Objekt
     """
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("""
-            INSERT INTO price_history 
-            (skin, timestamp, price, median_price, volume, spread_absolute, spread_percentage) 
+            INSERT INTO market_data 
+            (skin, timestamp, lowest_price, median_price, volume, spread_absolute, spread_percentage) 
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             skin, 
@@ -66,56 +49,24 @@ def insert_comprehensive_market_data(skin: str, market_data):
             market_data.spread_percentage
         ))
 
-def get_price_history(skin: str) -> List[Tuple[str, float]]:
+def get_market_history(skin: str) -> List[Tuple]:
     """
-    Ruft die Preishistorie für einen Skin ab.
+    Ruft die komplette Markthistorie für einen Skin ab.
     
-    Args:
-        skin: Name des Skins
-        
     Returns:
-        Liste von (timestamp, price) Tupeln, sortiert nach Zeit
+        Liste von (timestamp, lowest_price, median_price, volume, spread_absolute, spread_percentage) Tupeln
     """
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.execute(
-            "SELECT timestamp, price FROM price_history WHERE skin = ? ORDER BY timestamp",
+            """SELECT timestamp, lowest_price, median_price, volume, spread_absolute, spread_percentage 
+               FROM market_data WHERE skin = ? ORDER BY timestamp""",
             (skin,)
         )
         return cursor.fetchall()
 
-def export_price_history(skin: str, filename: str):
-    """
-    Exportiert die Preishistorie eines Skins in eine CSV-Datei.
-    
-    Args:
-        skin: Name des Skins
-        filename: Pfad zur Ausgabe-CSV-Datei
-    """
-    rows = get_price_history(skin)
-    with open(filename, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
-        writer.writerow(["Timestamp", "Preis (€)"])
-        writer.writerows(rows)
-
-def export_comprehensive_market_data(skin: str, filename: str):
-    """
-    Exportiert die kompletten Marktdaten eines Skins in eine CSV-Datei.
-    Enthält alle Daten: Preis, Median-Preis, Volumen und Spread.
-    
-    Args:
-        skin: Name des Skins
-        filename: Pfad zur Ausgabe-CSV-Datei
-    """
-    rows = get_comprehensive_history(skin)
-    
-    if not rows:
-        # Fallback auf einfache Preishistorie
-        simple_rows = get_price_history(skin)
-        with open(filename, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["Timestamp", "Preis (€)"])
-            writer.writerows(simple_rows)
-        return
+def export_market_data(skin: str, filename: str):
+    """Exportiert alle Marktdaten als CSV."""
+    rows = get_market_history(skin)
     
     with open(filename, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -129,55 +80,12 @@ def export_comprehensive_market_data(skin: str, filename: str):
         ])
         writer.writerows(rows)
 
-def get_volume_history(skin: str) -> List[Tuple[str, int]]:
-    """
-    Ruft die Volumenhistorie für einen Skin ab.
-    
-    Args:
-        skin: Name des Skins
-        
-    Returns:
-        Liste von (timestamp, volume) Tupeln, sortiert nach Zeit
-    """
+def get_latest_price(skin: str) -> float:
+    """Ruft den neuesten Preis für einen Skin ab."""
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.execute(
-            "SELECT timestamp, volume FROM price_history WHERE skin = ? ORDER BY timestamp",
+            "SELECT lowest_price FROM market_data WHERE skin = ? ORDER BY timestamp DESC LIMIT 1",
             (skin,)
         )
-        return cursor.fetchall()
-
-def get_spread_history(skin: str) -> List[Tuple[str, float, float]]:
-    """
-    Ruft die Spread-Historie für einen Skin ab.
-    
-    Args:
-        skin: Name des Skins
-        
-    Returns:
-        Liste von (timestamp, spread_absolute, spread_percentage) Tupeln
-    """
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.execute(
-            """SELECT timestamp, spread_absolute, spread_percentage 
-               FROM price_history WHERE skin = ? ORDER BY timestamp""",
-            (skin,)
-        )
-        return cursor.fetchall()
-
-def get_comprehensive_history(skin: str) -> List[Tuple]:
-    """
-    Ruft die komplette Markthistorie für einen Skin ab.
-    
-    Args:
-        skin: Name des Skins
-        
-    Returns:
-        Liste von (timestamp, price, median_price, volume, spread_absolute, spread_percentage) Tupeln
-    """
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.execute(
-            """SELECT timestamp, price, median_price, volume, spread_absolute, spread_percentage 
-               FROM price_history WHERE skin = ? ORDER BY timestamp""",
-            (skin,)
-        )
-        return cursor.fetchall()
+        result = cursor.fetchone()
+        return result[0] if result else 0.0
