@@ -89,7 +89,15 @@ class MainWindow(QMainWindow):
         init_db()
         self.create_menu_bar()
         self.setup_shortcuts()
-        self.refresh_all_prices()
+        
+        # Status auf "Bereit" setzen statt "Lädt..."
+        self.status_label.setText("Bereit - Drücken Sie 'Alle aktualisieren' für neue Daten")
+        self.status_label.setStyleSheet("color: #cccccc; font-weight: normal;")
+        
+        # Zeige ersten Skin falls vorhanden
+        if self.skin_list.count() > 0:
+            self.skin_list.setCurrentRow(0)
+            self.update_chart()
 
     def center_window(self):
         """Zentriert das Fenster."""
@@ -186,6 +194,8 @@ class MainWindow(QMainWindow):
         for i in range(self.skin_list.count()):
             skin = self.skin_list.item(i).text()
             self.update_market_data_for_skin(skin)
+        self.status_label.setText("✅ Alle Marktdaten wurden aktualisiert")
+        self.status_label.setStyleSheet("color: green; font-weight: bold;")
 
     def update_chart(self):
         """Aktualisiert das Chart."""

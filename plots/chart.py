@@ -115,9 +115,6 @@ class MarketDataCanvas(FigureCanvas):
                     margin = max(margin, 0.1)
                     
                     self.ax_price.set_ylim(min_price - margin, max_price + margin)
-                    
-                    # Debug-Info (optional)
-                    print(f"Price range: {min_price:.2f}€ - {max_price:.2f}€ (Range: {price_range:.2f}€)")
             
             # 2. Handelsvolumen
             if len(timestamps) > 1:
