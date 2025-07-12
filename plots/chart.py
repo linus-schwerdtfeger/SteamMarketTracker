@@ -72,10 +72,12 @@ class MarketDataCanvas(FigureCanvas):
                               label="Niedrigster Preis", alpha=0.9)
             
             # Median-Preis nur wenn verfügbar
+            median_plotted = False
             if np.any(median_prices > 0):
                 self.ax_price.plot(timestamps, median_prices, 
                                   color="#ffa500", linewidth=2, linestyle="--", 
                                   marker="s", markersize=3, label="Median Preis", alpha=0.8)
+                median_plotted = True
                 
                 legend = self.ax_price.legend(loc='upper left', fontsize=9, framealpha=0.9)
                 legend.get_frame().set_facecolor('#2d2d2d')
@@ -86,11 +88,35 @@ class MarketDataCanvas(FigureCanvas):
             self.ax_price.set_title(f"Preisverlauf: {skin_name}", fontsize=13, fontweight='bold')
             self.ax_price.set_ylabel("Preis (€)", fontsize=11)
             
-            # Y-Achse optimieren
+            # Y-Achse optimieren - KORRIGIERT für beide Preistypen
             if len(prices) > 1:
-                price_range = np.max(prices) - np.min(prices)
-                margin = price_range * 0.05
-                self.ax_price.set_ylim(np.min(prices) - margin, np.max(prices) + margin)
+                # Sammle alle relevanten Preise
+                all_prices = list(prices)
+                
+                # Füge gültige Median-Preise hinzu
+                if median_plotted:
+                    valid_median = median_prices[median_prices > 0]
+                    all_prices.extend(valid_median)
+                
+                # Setze Y-Achse basierend auf ALLEN Preisen
+                if all_prices:
+                    min_price = min(all_prices)
+                    max_price = max(all_prices)
+                    price_range = max_price - min_price
+                    
+                    # Intelligente Margin-Berechnung
+                    if price_range > 0:
+                        margin = price_range * 0.05  # 5% Margin
+                    else:
+                        margin = max_price * 0.1 if max_price > 0 else 1.0  # 10% bei gleichen Preisen
+                    
+                    # Mindest-Margin für sehr kleine Spreads
+                    margin = max(margin, 0.1)
+                    
+                    self.ax_price.set_ylim(min_price - margin, max_price + margin)
+                    
+                    # Debug-Info (optional)
+                    print(f"Price range: {min_price:.2f}€ - {max_price:.2f}€ (Range: {price_range:.2f}€)")
             
             # 2. Handelsvolumen
             if len(timestamps) > 1:
