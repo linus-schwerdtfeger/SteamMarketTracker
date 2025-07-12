@@ -4,6 +4,7 @@ import matplotlib.dates as mdates
 from datetime import datetime
 from typing import List, Tuple
 import numpy as np
+import logging
 
 class MarketDataCanvas(FigureCanvas):
     """Canvas für umfassende Marktdatenvisualisierung (Preis, Volumen, Spread)."""
@@ -79,12 +80,13 @@ class MarketDataCanvas(FigureCanvas):
                                   color="#ffa500", linewidth=2, linestyle="--", 
                                   marker="s", markersize=3, label="Median Preis", alpha=0.8)
                 median_plotted = True
-                
-                legend = self.ax_price.legend(loc='upper left', fontsize=9, framealpha=0.9)
-                legend.get_frame().set_facecolor('#2d2d2d')
-                legend.get_frame().set_edgecolor('#cccccc')
-                for text in legend.get_texts():
-                    text.set_color('#ffffff')
+
+            # Legend immer anzeigen, falls mindestens eine Serie geplottet wurde
+            legend = self.ax_price.legend(loc='upper left', fontsize=9, framealpha=0.9)
+            legend.get_frame().set_facecolor('#2d2d2d')
+            legend.get_frame().set_edgecolor('#cccccc')
+            for text in legend.get_texts():
+                text.set_color('#ffffff')
             
             self.ax_price.set_title(f"Preisverlauf: {skin_name}", fontsize=13, fontweight='bold')
             self.ax_price.set_ylabel("Preis (€)", fontsize=11)
@@ -184,12 +186,12 @@ class MarketDataCanvas(FigureCanvas):
                 
                 # Adaptive Label-Anzahl basierend auf Datenmenge
                 if len(timestamps) > 15:
-                    # Bei vielen Datenpunkten: Weniger Labels anzeigen
-                    ax.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, len(timestamps)//max_labels)))
+                    # Bei vielen Datenpunkten: Verwende label_interval für DayLocator
+                    ax.xaxis.set_major_locator(mdates.DayLocator(interval=label_interval))
                 elif len(timestamps) > 5:
-                    # Bei mittlerer Anzahl: Jeden 2. anzeigen
+                    # Bei mittlerer Anzahl: Verwende label_interval statt hardcoded "2"
                     for i, label in enumerate(ax.xaxis.get_ticklabels()):
-                        if i % 2 != 0:
+                        if i % label_interval != 0:  # ← Jetzt wird label_interval verwendet
                             label.set_visible(False)
             
             # Nur das unterste Diagramm zeigt X-Achsen-Labels
@@ -231,5 +233,5 @@ class MarketDataCanvas(FigureCanvas):
                    bbox=dict(boxstyle="round,pad=0.5", facecolor='#2d2d2d', alpha=0.9))
             ax.set_title(f"Fehler - {title}: {skin_name}", fontsize=12, color='#ff6b6b')
         
-        print(f"Chart-Fehler: {error}")
+        logging.error(f"Chart-Fehler: {error}")
         self.draw()
