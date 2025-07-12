@@ -1,7 +1,7 @@
 """
-CS:GO Skin Markt Preis-Tracker
+Counter Strike Skin Markt Preis-Tracker
 
-Ein GUI-Tool zum Verfolgen von CS:GO Skin-Preisen mit Preishistorie,
+Ein GUI-Tool zum Verfolgen von Counter Strike Skin-Preisen mit Preishistorie,
 Diagrammen und Preisalarmen.
 """
 import sys

@@ -1,13 +1,28 @@
 import requests
 import urllib.parse
 import re
-from typing import Tuple, Optional
+from typing import Tuple, Optional, NamedTuple
+from dataclasses import dataclass
 
 # Konstanten
 STEAM_API_BASE_URL = "https://steamcommunity.com/market/priceoverview/"
 CSGO_APP_ID = "730"
 EUR_CURRENCY_ID = "3"
 REQUEST_TIMEOUT = 10
+
+@dataclass
+class MarketData:
+    """Datenstruktur für umfassende Marktdaten eines Skins."""
+    lowest_price: float
+    median_price: float
+    volume: int
+    spread_absolute: float  # Unterschied zwischen lowest und median price
+    spread_percentage: float  # Spread als Prozentsatz
+    
+    @property
+    def has_valid_data(self) -> bool:
+        """Prüft, ob die Marktdaten gültig sind."""
+        return self.lowest_price > 0 and self.volume > 0
 
 def _parse_price_string(price_str: str) -> float:
     """
@@ -56,7 +71,7 @@ def _parse_volume_string(volume_str: str) -> int:
 
 def fetch_price(skin_name: str) -> Tuple[Optional[float], Optional[int]]:
     """
-    Ruft den aktuellen Marktpreis und das Handelsvolumen für einen CS:GO Skin ab.
+    Ruft den aktuellen Marktpreis und das Handelsvolumen für einen CS Skin ab.
     
     Args:
         skin_name: Name des Skins (z.B. "AK-47 | Redline (Field-Tested)")
@@ -102,3 +117,63 @@ def fetch_price(skin_name: str) -> Tuple[Optional[float], Optional[int]]:
     except Exception as e:
         print(f"Unerwarteter Fehler beim Abrufen für '{skin_name}': {e}")
         return None, None
+
+def fetch_comprehensive_market_data(skin_name: str) -> Optional[MarketData]:
+    """
+    Ruft umfassende Marktdaten für einen CS Skin ab.
+    
+    Args:
+        skin_name: Name des Skins (z.B. "AK-47 | Redline (Field-Tested)")
+        
+    Returns:
+        MarketData Objekt oder None bei Fehlern
+    """
+    if not skin_name or not skin_name.strip():
+        return None
+    
+    # Parameter für die API
+    params = {
+        'appid': CSGO_APP_ID,
+        'currency': EUR_CURRENCY_ID,
+        'market_hash_name': skin_name.strip()
+    }
+    
+    try:
+        response = requests.get(
+            STEAM_API_BASE_URL,
+            params=params,
+            timeout=REQUEST_TIMEOUT
+        )
+        response.raise_for_status()
+        data = response.json()
+
+        if not data.get("success"):
+            print(f"Steam API Fehler für '{skin_name}': Anfrage nicht erfolgreich")
+            return None
+        
+        # Preise und Volume parsen
+        lowest_price = _parse_price_string(data.get("lowest_price", ""))
+        median_price = _parse_price_string(data.get("median_price", ""))
+        volume = _parse_volume_string(data.get("volume", ""))
+        
+        # Spread berechnen
+        spread_absolute = abs(median_price - lowest_price) if median_price > 0 and lowest_price > 0 else 0.0
+        spread_percentage = (spread_absolute / lowest_price * 100) if lowest_price > 0 else 0.0
+        
+        return MarketData(
+            lowest_price=lowest_price,
+            median_price=median_price,
+            volume=volume,
+            spread_absolute=spread_absolute,
+            spread_percentage=spread_percentage
+        )
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Netzwerk-Fehler beim Abrufen für '{skin_name}': {e}")
+        return None
+    except ValueError as e:
+        print(f"JSON-Parse-Fehler für '{skin_name}': {e}")
+        return None
+    except Exception as e:
+        print(f"Unerwarteter Fehler beim Abrufen für '{skin_name}': {e}")
+        return None

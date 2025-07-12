@@ -1,6 +1,6 @@
 # CS:GO Skin Markt Preis-Tracker
 
-Ein Desktop-Tool zum Verfolgen von CS:GO Skin-Preisen mit Preishistorie, Diagrammen und Preisalarmen.
+Ein Desktop-Tool zum Verfolgen von Counter Strike Skin-Preisen mit Preishistorie, Diagrammen und Preisalarmen.
 
 ## Features
 
@@ -50,6 +50,39 @@ Ein Desktop-Tool zum Verfolgen von CS:GO Skin-Preisen mit Preishistorie, Diagram
 - 🗂️ **Klare Trennung von Verantwortlichkeiten**
 - 🔧 **Konfigurierbare Konstanten**
 - 🧪 **Bessere Testbarkeit** durch modularen Aufbau
+
+## 🆕 Neue Erweiterte Features
+
+### Multi-Chart Dashboard
+- **📈 Preisverlauf**: Zeigt sowohl niedrigsten als auch Median-Preis
+- **📊 Handelsvolumen**: Balkendiagramm der Liquidität über die Zeit
+- **📉 Bid-Ask Spread**: Linienchart der Markt-Spreads (absolut und prozentual)
+
+### Erweiterte Marktdaten
+- **Median-Preis**: Zusätzlich zum niedrigsten Preis
+- **Volumen-Tracking**: Handelsvolumen als Liquiditätsindikator  
+- **Spread-Analyse**: Unterschied zwischen Kauf- und Verkaufsangeboten
+- **Spread-Prozentsatz**: Relative Spread-Berechnung für bessere Vergleichbarkeit
+
+### Verbesserte Benutzeroberfläche
+- **Toggle-Option**: Wechseln zwischen einfacher und erweiterter Ansicht
+- **Status-Anzeige**: Live-Updates über Datenlade-Status
+- **Drei-Panel Layout**: Übersichtliche Darstellung aller Marktaspekte
+
+### Smart Data Management
+- **Automatische Schema-Migration**: Bestehende Datenbanken werden automatisch erweitert
+- **Fallback-Mechanismus**: Funktioniert auch wenn nur Basisdaten verfügbar sind
+- **Effiziente Speicherung**: Optimierte Datenbankstruktur mit Indizes
+
+## Migration für bestehende Installationen
+
+Falls Sie bereits eine ältere Version verwenden:
+
+```bash
+python migrate_db.py
+```
+
+Dieses Skript erweitert Ihre bestehende Datenbank um die neuen Spalten.
 
 ## Architektur
 
