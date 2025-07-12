@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Optional
 from PySide6.QtWidgets import (
     QWidget, QMainWindow, QVBoxLayout, QHBoxLayout,
     QPushButton, QListWidget, QLineEdit, QMessageBox, QFileDialog
@@ -8,18 +9,32 @@ from data.fetcher import fetch_price
 from data.db import insert_price, get_price_history, init_db
 from plots.chart import PricePlotCanvas
 
-
-@staticmethod
-def check_alert(skin, current_price):
-    with open("alerts.json", "r", encoding="utf-8") as f:
-        alerts = json.load(f)
-    limit = alerts.get(skin)
-    if limit and current_price <= limit:
-        return True
-    return False
-
-
+# Konstanten
 WATCHLIST_PATH = "watchlist.json"
+ALERTS_PATH = "alerts.json"
+
+def check_alert(skin: str, current_price: float) -> bool:
+    """
+    Prüft, ob für einen Skin ein Preisalarm ausgelöst werden soll.
+    
+    Args:
+        skin: Name des Skins
+        current_price: Aktueller Preis
+        
+    Returns:
+        True wenn Alarm ausgelöst werden soll, False sonst
+    """
+    try:
+        if not os.path.exists(ALERTS_PATH):
+            return False
+            
+        with open(ALERTS_PATH, "r", encoding="utf-8") as f:
+            alerts = json.load(f)
+        
+        limit = alerts.get(skin)
+        return limit is not None and current_price <= limit
+    except (json.JSONDecodeError, IOError):
+        return False
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -76,43 +91,75 @@ class MainWindow(QMainWindow):
 
 
     def load_watchlist(self):
-        if os.path.exists(WATCHLIST_PATH):
+        """Lädt die Watchlist aus der JSON-Datei."""
+        if not os.path.exists(WATCHLIST_PATH):
+            return
+            
+        try:
             with open(WATCHLIST_PATH, "r", encoding="utf-8") as f:
-                try:
-                    skins = json.load(f)
+                skins = json.load(f)
+                if isinstance(skins, list):
                     for skin in skins:
-                        self.skin_list.addItem(skin)
-                except json.JSONDecodeError:
-                    QMessageBox.warning(self, "Fehler", "Watchlist-Datei ist beschädigt.")
+                        if isinstance(skin, str) and skin.strip():
+                            self.skin_list.addItem(skin.strip())
+        except (json.JSONDecodeError, IOError) as e:
+            QMessageBox.warning(self, "Fehler", f"Watchlist-Datei konnte nicht geladen werden: {e}")
 
     def save_watchlist(self):
+        """Speichert die aktuelle Watchlist in die JSON-Datei."""
         skins = [self.skin_list.item(i).text() for i in range(self.skin_list.count())]
-        with open(WATCHLIST_PATH, "w", encoding="utf-8") as f:
-            json.dump(skins, f, indent=2, ensure_ascii=False)
+        try:
+            with open(WATCHLIST_PATH, "w", encoding="utf-8") as f:
+                json.dump(skins, f, indent=2, ensure_ascii=False)
+        except IOError as e:
+            QMessageBox.warning(self, "Fehler", f"Watchlist konnte nicht gespeichert werden: {e}")
+
+    def _is_skin_in_list(self, skin_name: str) -> bool:
+        """Prüft, ob ein Skin bereits in der Liste ist."""
+        for i in range(self.skin_list.count()):
+            if self.skin_list.item(i).text() == skin_name:
+                return True
+        return False
 
     def add_skin(self):
+        """Fügt einen neuen Skin zur Watchlist hinzu."""
         skin_name = self.input_field.text().strip()
         if not skin_name:
+            QMessageBox.information(self, "Info", "Bitte geben Sie einen Skin-Namen ein.")
             return
-        if any(self.skin_list.item(i).text() == skin_name for i in range(self.skin_list.count())):
+            
+        if self._is_skin_in_list(skin_name):
             QMessageBox.information(self, "Info", "Skin ist bereits in der Liste.")
             return
+            
         self.skin_list.addItem(skin_name)
         self.input_field.clear()
         self.save_watchlist()
+        
+        # Preis abrufen und Skin auswählen
         self.update_price_for_skin(skin_name)
-        self.skin_list.setCurrentRow(self.skin_list.count() - 1)  # Skin auswählen
-        self.update_plot()  # Diagramm aktualisieren
+        self.skin_list.setCurrentRow(self.skin_list.count() - 1)
+        self.update_plot()
 
     def remove_skin(self):
+        """Entfernt den ausgewählten Skin aus der Watchlist."""
         selected = self.skin_list.currentRow()
         if selected >= 0:
             self.skin_list.takeItem(selected)
             self.save_watchlist()
+            self.update_plot()  # Plot aktualisieren
+        else:
+            QMessageBox.information(self, "Info", "Bitte wählen Sie einen Skin zum Entfernen aus.")
 
-    def update_price_for_skin(self, skin):
+    def update_price_for_skin(self, skin: str):
+        """
+        Aktualisiert den Preis für einen bestimmten Skin.
+        
+        Args:
+            skin: Name des Skins
+        """
         price, volume = fetch_price(skin)
-        if price is not None:
+        if price is not None and volume is not None:
             insert_price(skin, price, volume)
             if check_alert(skin, price):
                 QMessageBox.information(
@@ -120,27 +167,48 @@ class MainWindow(QMainWindow):
                     "💥 Preisalarm!",
                     f"{skin} kostet jetzt nur noch {price:.2f} €!"
                 )
+        else:
+            print(f"Konnte Preis für '{skin}' nicht abrufen.")
 
     def refresh_all_prices(self):
+        """Aktualisiert die Preise für alle Skins in der Watchlist."""
         for i in range(self.skin_list.count()):
             skin = self.skin_list.item(i).text()
             self.update_price_for_skin(skin)
 
-
-
     def update_plot(self):
-        skin = self.skin_list.currentItem()
-        if not skin:
-            self.plot_canvas.plot([], "")
+        """Aktualisiert das Preisdiagramm für den ausgewählten Skin."""
+        current_item = self.skin_list.currentItem()
+        if not current_item:
+            self.plot_canvas.plot([], "Kein Skin ausgewählt")
             return
-        history = get_price_history(skin.text())
-        self.plot_canvas.plot(history, skin.text())
+            
+        skin_name = current_item.text()
+        history = get_price_history(skin_name)
+        self.plot_canvas.plot(history, skin_name)
 
     def export_data(self):
-        skin = self.skin_list.currentItem()
-        if not skin:
+        """Exportiert die Preisdaten des ausgewählten Skins als CSV."""
+        current_item = self.skin_list.currentItem()
+        if not current_item:
+            QMessageBox.information(self, "Info", "Bitte wählen Sie einen Skin zum Exportieren aus.")
             return
-        filename, _ = QFileDialog.getSaveFileName(self, "Exportieren als CSV", f"{skin.text()}.csv", "CSV-Dateien (*.csv)")
+            
+        skin_name = current_item.text()
+        # Entferne ungültige Zeichen aus dem Dateinamen
+        safe_filename = "".join(c for c in skin_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        
+        filename, _ = QFileDialog.getSaveFileName(
+            self, 
+            "Exportieren als CSV", 
+            f"{safe_filename}.csv", 
+            "CSV-Dateien (*.csv)"
+        )
+        
         if filename:
-            from data.db import export_price_history
-            export_price_history(skin.text(), filename)
+            try:
+                from data.db import export_price_history
+                export_price_history(skin_name, filename)
+                QMessageBox.information(self, "Erfolg", f"Daten erfolgreich nach {filename} exportiert.")
+            except Exception as e:
+                QMessageBox.warning(self, "Fehler", f"Export fehlgeschlagen: {e}")

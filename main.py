@@ -1,14 +1,23 @@
+"""
+CS:GO Skin Markt Preis-Tracker
+
+Ein GUI-Tool zum Verfolgen von CS:GO Skin-Preisen mit Preishistorie,
+Diagrammen und Preisalarmen.
+"""
+import sys
 from PySide6.QtWidgets import QApplication
 from ui.main_window import MainWindow
-import sys
-from data.fetcher import fetch_price
-from data.db import insert_price, get_price_history, init_db
-from plots.chart import PricePlotCanvas
 
-
-if __name__ == "__main__":
+def main():
+    """Hauptfunktion der Anwendung."""
     app = QApplication(sys.argv)
+    app.setApplicationName("CS Skin Markt Preis-Tracker")
+    app.setApplicationVersion("1.0")
+    
     window = MainWindow()
     window.show()
-    sys.exit(app.exec())
-# This code initializes a PySide6 application, creates an instance of MainWindow, and starts the event loop.
+    
+    return app.exec()
+
+if __name__ == "__main__":
+    sys.exit(main())

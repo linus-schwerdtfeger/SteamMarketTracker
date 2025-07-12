@@ -1,0 +1,18 @@
+# CS:GO Skin Markt Preis-Tracker Abhängigkeiten
+
+# GUI Framework
+PySide6>=6.5.0
+
+# HTTP Requests
+requests>=2.28.0
+
+# Plotting
+matplotlib>=3.5.0
+
+# Standard Library (bereits in Python enthalten):
+# - sqlite3
+# - json
+# - urllib.parse
+# - datetime
+# - csv
+# - typing
