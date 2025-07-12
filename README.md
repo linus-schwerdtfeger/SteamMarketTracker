@@ -1,4 +1,4 @@
-# CS:GO Skin Markt Preis-Tracker
+# Community Market Item Price-Tracker
 
 Ein Desktop-Tool zum Verfolgen von Counter Strike Skin-Preisen mit Preishistorie, Diagrammen und Preisalarmen.
 
