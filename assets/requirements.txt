@@ -1,23 +1,55 @@
-# CS:GO Skin Markt Preis-Tracker Abhängigkeiten
+# CS Skin Markt Preis-Tracker - Abhängigkeiten
+# Version: 1.0
 
+# ═══════════════════════════════════════════════════════════════════════════════
 # GUI Framework
-PySide6>=6.5.0
+# ═══════════════════════════════════════════════════════════════════════════════
+PySide6>=6.5.0                 # Qt6-basierte GUI-Framework für moderne Benutzeroberflächen
+                                # - Threading-Support für Auto-Updates
+                                # - Signal/Slot-System für Worker-Kommunikation
+                                # - Responsive Design-Komponenten
 
-# HTTP Requests
-requests>=2.28.0
+# ═══════════════════════════════════════════════════════════════════════════════
+# HTTP-Requests und API-Integration
+# ═══════════════════════════════════════════════════════════════════════════════
+requests>=2.28.0               # Steam Community Market API-Integration
+                                # - Rate-limiting-freundliche HTTP-Requests
+                                # - JSON-Response-Handling
+                                # - Timeout- und Exception-Management
 
-# Plotting und numerische Berechnungen
-matplotlib>=3.5.0
-numpy>=1.21.0
+# ═══════════════════════════════════════════════════════════════════════════════
+# Datenvisualisierung und numerische Berechnungen
+# ═══════════════════════════════════════════════════════════════════════════════
+matplotlib>=3.5.0              # Multi-Panel Chart-System
+                                # - Preisverlauf-Diagramme (Lowest/Median)
+                                # - Handelsvolumen-Balkendiagramme
+                                # - Bid-Ask Spread-Visualisierung
+                                # - Dunkles Theme mit optimierten Layouts
 
-# Standard Library (bereits in Python enthalten):
-# - sqlite3
-# - json
-# - urllib.parse
-# - datetime
-# - csv
-# - typing
-# - dataclasses
-# - re
-# - sys
-# - os
+numpy>=1.21.0                  # Effiziente numerische Operationen
+                                # - Array-basierte Datenverarbeitung
+                                # - Statistische Berechnungen für Charts
+                                # - Performance-Optimierungen für große Datensätze
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Python Standard Library (bereits enthalten, hier dokumentiert)
+# ═══════════════════════════════════════════════════════════════════════════════
+# sqlite3                      # Lokale Datenbank für Marktdaten-Persistierung
+# json                         # Watchlist und Alert-Konfiguration
+# threading                    # Worker-Threads für non-blocking Updates
+# datetime                     # Zeitstempel-Management
+# csv                          # Datenexport-Funktionalität
+# typing                       # Type-Hints für bessere Code-Dokumentation
+# dataclasses                  # MarketData-Strukturen
+# re                           # Regex für robuste String-Parsing
+# urllib.parse                 # URL-Parameter-Encoding für Steam API
+# sys, os                      # System- und Datei-Operationen
+# time                         # Rate-Limiting zwischen API-Requests
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Entwickler-Notizen
+# ═══════════════════════════════════════════════════════════════════════════════
+# Installation: pip install -r assets/requirements.txt
+# Python-Version: 3.8+ (empfohlen: 3.10+)
+# Plattformen: Windows, macOS, Linux
+# GPU-Beschleunigung: Nicht erforderlich (CPU-optimiert)

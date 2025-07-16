@@ -1,0 +1,434 @@
+CS Skin Tracker - Technische Dokumentation
+==========================================
+
+Version: 1.0
+Autor: Linus
+Datum: 16. Juli 2025
+
+INHALTSVERZEICHNIS
+==================
+1. Überblick und Funktionen
+2. Systemanforderungen
+3. Installation und Setup
+4. Architektur und Module
+5. Technische Details
+6. Bedienungsanleitung
+7. Datenbank-Schema
+8. API-Integration
+9. Fehlerbehebung
+10. Wartung und Updates
+
+1. ÜBERBLICK UND FUNKTIONEN
+===========================
+
+Der CS Skin Tracker ist eine Desktop-Anwendung zur Überwachung und Analyse von Counter-Strike Skin-Marktpreisen. Die Software bietet Echtzeit-Preisüberwachung, historische Datenanalyse und automatisierte Update-Funktionen.
+
+Hauptfunktionen:
+- Automatisierte Preisüberwachung (Auto-Update-System)
+- Multi-Panel Dashboard mit erweiterten Charts
+- Preisalarm-System für günstige Gelegenheiten
+- Historische Datenanalyse und Trends
+- CSV-Export für externe Analyse
+- Thread-basierte Updates ohne UI-Blocking
+- Dark Theme für augenschonende Bedienung
+
+Zielgruppe:
+- CS:GO/CS2 Trader und Sammler
+- Marktanalysten für Skin-Preise
+- Investoren im virtuellen Gütermarkt
+- Gaming-Community-Manager
+
+2. SYSTEMANFORDERUNGEN
+======================
+
+Minimale Anforderungen:
+- Betriebssystem: Windows 10/11 (64-bit)
+- Python: 3.8 oder höher
+- RAM: 4 GB (empfohlen: 8 GB)
+- Festplatte: 100 MB freier Speicher
+- Internetverbindung: Stabil für Steam API-Zugriff
+
+Empfohlene Anforderungen:
+- Windows 11 mit aktuellen Updates
+- Python 3.11+
+- 8 GB+ RAM für große Datenmengen
+- SSD für bessere Datenbank-Performance
+- Breitband-Internet (min. 10 Mbit/s)
+
+Abhängigkeiten:
+- PySide6 (Qt6-GUI-Framework)
+- matplotlib (Chart-Visualisierung)
+- requests (HTTP-API-Kommunikation)
+- numpy (numerische Operationen)
+- sqlite3 (eingebaut in Python)
+
+3. INSTALLATION UND SETUP
+==========================
+
+Installation über Python:
+1. Python 3.8+ von python.org installieren
+2. Abhängigkeiten installieren:
+   pip install PySide6 matplotlib requests numpy
+
+3. Repository herunterladen oder entpacken
+4. Im Projektverzeichnis ausführen:
+   python main.py
+
+Erste Einrichtung:
+1. Anwendung startet automatisch Datenbank-Setup
+2. Erste Skins zur Watchlist hinzufügen
+3. "Alle aktualisieren" für initiale Daten
+4. Auto-Update-Intervall nach Bedarf konfigurieren
+
+Verzeichnisstruktur:
+cs_skin_tracker/
+├── main.py                 # Anwendungseinstieg
+├── data/
+│   ├── fetcher.py         # Steam API Integration
+│   └── db.py              # Datenbank-Management
+├── ui/
+│   └── main_window.py     # Hauptfenster GUI
+├── plots/
+│   └── chart.py           # Chart-Visualisierung
+├── skin_prices.db         # SQLite Datenbank
+├── watchlist.json         # Gespeicherte Skin-Liste
+└── alerts.json            # Preisalarm-Konfiguration
+
+4. ARCHITEKTUR UND MODULE
+=========================
+
+4.1 Modulare Architektur
+------------------------
+Die Anwendung folgt einer modularen Architektur mit klarer Trennung von Verantwortlichkeiten:
+
+- main.py: Anwendungseinstieg und Qt-Setup
+- data/: Datenverarbeitung und Persistierung
+- ui/: Benutzeroberfläche und Interaktion
+- plots/: Datenvisualisierung und Charts
+
+4.2 Threading-Model
+-------------------
+- UI-Thread: Hauptthread für GUI-Rendering und Benutzerinteraktion
+- Worker-Thread: Hintergrund-Updates für API-Requests ohne UI-Blocking
+- Timer-System: Automatisierte Aktualisierungszyklen
+
+4.3 Datenfluss
+--------------
+1. Steam API → fetcher.py → MarketData-Objekt
+2. MarketData → db.py → SQLite-Datenbank
+3. Datenbank → chart.py → Matplotlib-Visualisierung
+4. UI-Events → main_window.py → Koordination aller Module
+
+5. TECHNISCHE DETAILS
+=====================
+
+5.1 Steam API Integration (fetcher.py)
+--------------------------------------
+- Endpoint: Steam Community Market API
+- Rate-Limiting: 2 Sekunden zwischen Requests
+- Error-Handling: Umfassende Exception-Behandlung
+- Datenvalidierung: Robuste String-zu-Numerisch-Konvertierung
+- Currency: Euro (ID: 3) für deutsche Nutzer
+
+Datenstruktur MarketData:
+- lowest_price: Günstigster verfügbarer Preis
+- median_price: Median der letzten Transaktionen
+- volume: Anzahl Transaktionen (24h)
+- spread_absolute: Absoluter Bid-Ask-Spread
+- spread_percentage: Relativer Spread in Prozent
+
+5.2 Datenbank-System (db.py)
+----------------------------
+- Engine: SQLite3 (serverless, portable)
+- Schema-Version: 2.0 mit automatischer Migration
+- Performance: WAL-Mode, optimierte Indizes
+- Backup-System: Automatische Backups vor Migrationen
+
+Schema market_data (v2.0):
+- id: Primary Key (AUTOINCREMENT)
+- skin: Skin-Name (TEXT, NOT NULL)
+- timestamp: ISO-Format (TEXT, NOT NULL)
+- lowest_price: Günstigster Preis (REAL)
+- median_price: Median-Preis (REAL)
+- volume: Handelsvolumen (INTEGER)
+- spread_absolute: Absoluter Spread (REAL)
+- spread_percentage: Prozentuale Spread (REAL)
+
+5.3 Visualisierung (chart.py)
+-----------------------------
+- Framework: Matplotlib mit PySide6-Integration
+- Layout: Drei-Panel-Dashboard (Preis/Volumen/Spread)
+- Theme: Dark Theme für augenschonende Darstellung
+- Performance: NumPy-Arrays für große Datenmengen
+
+Chart-Panels:
+1. Preisverlauf: Dual-Serie (Lowest/Median) mit Legende
+2. Handelsvolumen: Balkendiagramm mit Statistik-Overlay
+3. Bid-Ask Spread: Liniendiagramm mit adaptiver Einheit
+
+5.4 GUI-System (main_window.py)
+-------------------------------
+- Framework: PySide6 (Qt6-Python-Bindings)
+- Pattern: Signal/Slot für Event-Handling
+- Threading: Worker-Pattern für non-blocking Updates
+- Persistierung: JSON für Konfiguration und Listen
+
+Auto-Update-System:
+- Intervall: 3-1440 Minuten konfigurierbar
+- Worker-Thread: Parallel zu UI-Thread
+- Rate-Limiting: Steam API-schonende Implementierung
+- Performance-Warnung: Bei kritischen Intervallen
+
+6. BEDIENUNGSANLEITUNG
+======================
+
+6.1 Grundfunktionen
+-------------------
+Skin hinzufügen:
+1. Skin-Name in Eingabefeld eingeben
+2. "Hinzufügen" klicken oder Enter drücken
+3. Automatische Preisabfrage wird gestartet
+
+Manuelle Aktualisierung:
+1. "Alle aktualisieren" für komplette Watchlist
+2. Einzelne Skins durch Auswahl und Re-Selection
+
+Datenexport:
+1. Skin in Liste auswählen
+2. Datei → Exportieren (Ctrl+E)
+3. CSV-Datei mit Metadaten wird erstellt
+
+6.2 Auto-Update konfigurieren
+-----------------------------
+1. Intervall in Minuten einstellen (3-1440)
+2. "Auto-Update starten" klicken
+3. Bei Intervall-Warnungen bestätigen oder anpassen
+4. System läuft automatisch bis zum Stoppen
+
+Empfohlene Intervalle:
+- Aktive Trading: 5-15 Minuten
+- Langzeit-Monitoring: 30-60 Minuten
+- Gelegenheits-Tracking: 2-6 Stunden
+
+6.3 Preisalarme einrichten
+--------------------------
+Manuelle Konfiguration über alerts.json:
+{
+  "AK-47 | Redline (Field-Tested)": 25.00,
+  "AWP | Dragon Lore (Factory New)": 8000.00
+}
+
+Alarm-Auslösung bei Preis <= Limit-Wert
+
+6.4 Keyboard-Shortcuts
+----------------------
+- Enter: Skin hinzufügen (in Eingabefeld)
+- Delete: Skin entfernen (in Liste)
+- Ctrl+E: Daten exportieren
+- F11: Vollbild-Modus
+
+7. DATENBANK-SCHEMA
+===================
+
+7.1 Haupttabelle market_data
+----------------------------
+CREATE TABLE market_data (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    skin TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    lowest_price REAL NOT NULL,
+    median_price REAL NOT NULL DEFAULT 0.0,
+    volume INTEGER NOT NULL DEFAULT 0,
+    spread_absolute REAL NOT NULL DEFAULT 0.0,
+    spread_percentage REAL NOT NULL DEFAULT 0.0,
+    
+    -- Datenqualitäts-Constraints
+    CHECK (lowest_price >= 0),
+    CHECK (median_price >= 0),
+    CHECK (volume >= 0),
+    CHECK (spread_absolute >= 0),
+    CHECK (spread_percentage >= 0 AND spread_percentage <= 100),
+    CHECK (median_price >= lowest_price OR median_price = 0)
+);
+
+7.2 Performance-Indizes
+-----------------------
+- idx_skin_timestamp: Hauptindex für Skin-Abfragen
+- idx_timestamp: Zeitbereich-Abfragen
+- idx_skin_latest: Neueste Preise (mit DESC)
+- idx_price_range: Preisbereich-Analysen
+- idx_volume_analysis: Volumen-Analysen
+
+7.3 Schema-Migration
+--------------------
+Automatische Migration von v1 zu v2:
+- Hinzufügung neuer Spalten (median_price, volume, spreads)
+- Datenqualitäts-Constraints
+- Performance-Indizes
+- Analytische Views
+
+7.4 SQLite WAL-Dateien
+======================
+Die Dateien skin_prices.db-shm und skin_prices.db-wal gehören zum SQLite WAL-Mode:
+
+skin_prices.db-shm (Shared Memory):
+- Gemeinsamer Speicher für Writer/Reader-Koordination
+- Enthält Metadaten über aktuelle Transaktionen
+- Wird automatisch beim Öffnen der Datenbank erstellt
+- Größe: Typisch wenige KB
+
+skin_prices.db-wal (Write-Ahead Log):
+- Enthält alle Änderungen vor Commit in Hauptdatenbank
+- Ermöglicht parallele Lese-/Schreibzugriffe
+- Wird bei Checkpoints in Hauptdatenbank integriert
+- Größe: Wächst mit Anzahl uncommitted Transaktionen
+
+Vorteile des WAL-Mode:
+- Bessere Concurrency (Reader blockieren Writer nicht)
+- Geringere Lock-Zeiten
+- Bessere Performance bei häufigen Writes
+- Crash-Sicherheit durch separate Log-Datei
+
+Diese Dateien sind normal und sollten NICHT gelöscht werden!
+Sie werden automatisch von SQLite verwaltet.
+
+8. API-INTEGRATION
+==================
+
+8.1 Steam Community Market API
+------------------------------
+Basis-URL: https://steamcommunity.com/market/priceoverview/
+Parameter:
+- appid: 730 (CS:GO)
+- currency: 3 (Euro)
+- market_hash_name: Skin-Name (URL-encoded)
+
+Response-Format (JSON):
+{
+  "success": true,
+  "lowest_price": "24,50€",
+  "median_price": "25,30€",
+  "volume": "142"
+}
+
+8.2 Rate-Limiting und Error-Handling
+------------------------------------
+- Minimaler Delay: 2 Sekunden zwischen Requests
+- Timeout: 10 Sekunden pro Request
+- Retry-Logic: Keine automatischen Wiederholungen
+- Error-Kategorien: Network, HTTP, JSON, Validation
+
+8.3 Datenvalidierung
+--------------------
+String-Parsing für internationale Formate:
+- "24,50 €" → 24.50 (Deutsch)
+- "$24.50" → 24.50 (US)
+- "1.234,56 €" → 1234.56 (Tausender-Trenner)
+
+9. FEHLERBEHEBUNG
+=================
+
+9.1 Häufige Probleme
+-------------------
+Problem: "Keine Daten verfügbar"
+Lösung: 
+- Internetverbindung prüfen
+- Skin-Name exakt wie in Steam Market eingeben
+- Steam Community Market Verfügbarkeit prüfen
+
+Problem: Auto-Update stoppt
+Lösung:
+- Rate-Limiting durch längere Intervalle
+- Steam API-Limits beachten
+- Anwendung neu starten
+
+Problem: Datenbank-Fehler
+Lösung:
+- Automatische Backups in *.backup-Dateien
+- Schema-Migration bei Problemen wiederholen
+- Bei Korruption: Backup wiederherstellen
+
+9.2 Log-Dateien und Debugging
+-----------------------------
+Konsolen-Output für Debugging:
+- API-Request-Status mit URLs
+- Datenbank-Operationen mit Timing
+- Thread-Status und Worker-Events
+- Chart-Rendering-Performance
+
+9.3 Performance-Optimierung
+---------------------------
+Große Datenmengen (>10.000 Datenpunkte):
+- Chart-Rendering kann langsamer werden
+- Überlegung zu Daten-Aggregation
+- Cleanup alter Daten über cleanup_old_data()
+
+Speicherverbrauch:
+- SQLite-Datenbank wächst linear mit Daten
+- WAL-Dateien können bis zu ~1GB wachsen
+- VACUUM-Operation für Speicher-Rückgewinnung
+
+10. WARTUNG UND UPDATES
+=======================
+
+10.1 Datenbank-Wartung
+----------------------
+Regelmäßige Wartung:
+- Automatische Integrität-Checks beim Start
+- VACUUM-Operation bei Bedarf
+- Backup vor kritischen Operationen
+
+Cleanup alter Daten:
+```python
+from data.db import cleanup_old_data
+cleanup_old_data(days_to_keep=365)  # Behält nur 1 Jahr
+```
+
+10.2 Update-Verfahren
+--------------------
+Schema-Updates:
+- Automatische Migration bei Anwendungsstart
+- Backup-Erstellung vor Änderungen
+- Rollback-Möglichkeit bei Fehlern
+
+Anwendungs-Updates:
+- Neue Dateien über bestehende kopieren
+- Datenbank- und Konfigurationsdateien bleiben erhalten
+- Erste Ausführung führt automatische Migration durch
+
+10.3 Backup-Strategie
+--------------------
+Automatische Backups:
+- Vor Schema-Migrationen
+- Mit Zeitstempel im Dateinamen
+- Format: skin_prices.db.migration_YYYYMMDD_HHMMSS.backup
+
+Manuelle Backups:
+- Kopie der skin_prices.db-Datei
+- Einschließlich watchlist.json und alerts.json
+- Regelmäßig bei wichtigen Datenständen
+
+SUPPORT UND WEITERFÜHRENDE INFORMATIONEN
+========================================
+
+Technische Unterstützung:
+- GitHub Issues für Bug-Reports
+- Dokumentation in Modul-Docstrings
+- Community-Forum für Anwendungstipps
+
+Steam API Dokumentation:
+- Valve Developer Community
+- Steam Web API Documentation
+- Rate-Limiting Guidelines
+
+Python/Qt Entwicklung:
+- PySide6 Official Documentation
+- Matplotlib User Guide
+- SQLite Documentation
+
+Lizenz: MIT License - Freie Nutzung und Modifikation erlaubt
+Copyright (c) 2025 CS Skin Tracker Team
+
+====================================================================
+Ende der Dokumentation - Version 2.0 - 16. Juli 2025
+====================================================================
