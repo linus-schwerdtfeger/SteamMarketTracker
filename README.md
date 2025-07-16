@@ -14,7 +14,7 @@ Ein professioneller Desktop-Tracker für Counter-Strike Skin-Preise mit **Echtze
 
 ---
 
-## 🚀 **Neue Hauptfeatures v2.0**
+## 🚀 **Hauptfeatures v1.0**
 
 ### ⚡ **Intelligentes Auto-Update-System**
 - **🔄 Kontinuierliche Überwachung**: Automatische Preisaktualisierungen in konfigurierbaren Intervallen (3-1440 Min)
