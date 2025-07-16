@@ -248,7 +248,7 @@ python main.py  # Automatische Neuinitialisierung
 
 ---
 
-## 🔄 **Migration von v1.x**
+## 🔄 **Migration von v0.x**
 
 ### **Automatische Migration**
 ```bash
