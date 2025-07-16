@@ -1,4 +1,4 @@
-CS Skin Tracker - Technische Dokumentation
+Steam Market Tracker - Technische Dokumentation
 ==========================================
 
 Version: 1.0

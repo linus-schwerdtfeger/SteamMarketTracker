@@ -1,4 +1,4 @@
-# 🎯 CS Skin Markt Preis-Tracker v1.0
+# Steam Market Tracker
 
 <div align="center">
 
