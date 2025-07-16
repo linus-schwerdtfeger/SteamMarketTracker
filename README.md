@@ -62,8 +62,8 @@ Ein professioneller Desktop-Tracker für Counter-Strike Skin-Preise mit **Echtze
 ### **Schnell-Installation**
 ```bash
 # 1. Repository klonen/herunterladen
-git clone <repository-url>
-cd cs_skin_tracker
+git clone <https://github.com/linus-schwerdtfeger/SteamMarketTracker>
+cd SteamMarketTracker
 
 # 2. Abhängigkeiten installieren
 pip install -r assets/requirements.txt
