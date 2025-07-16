@@ -430,5 +430,5 @@ Lizenz: MIT License - Freie Nutzung und Modifikation erlaubt
 Copyright (c) 2025 CS Skin Tracker Team
 
 ====================================================================
-Ende der Dokumentation - Version 2.0 - 16. Juli 2025
+Ende der Dokumentation - Version 1.0 - 16. Juli 2025
 ====================================================================
