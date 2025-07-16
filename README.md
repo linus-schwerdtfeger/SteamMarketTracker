@@ -1,5 +1,4 @@
 # 🎯 CS Skin Markt Preis-Tracker v1.0
-### Enhanced Auto-Update Edition
 
 <div align="center">
 
