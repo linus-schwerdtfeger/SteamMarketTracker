@@ -71,7 +71,7 @@ pip install -r assets/requirements.txt
 python main.py
 ```
 
-### **Alternative: Virtuelle Umgebung (empfohlen)**
+### **Alternative: Virtuelle Umgebung**
 ```bash
 # Virtuelle Umgebung erstellen
 python -m venv venv
